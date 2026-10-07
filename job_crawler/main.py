@@ -42,8 +42,8 @@ def fmt_salary(job: Job) -> str:
 
 def sort_key(item):
     job, verdict = item
-    # Fully verified jobs first, then by top salary.
-    return (len(verdict.flags), -(job.salary_max or job.salary_min or 0))
+    # Leadership roles first, then fully verified jobs, then by top salary.
+    return (not verdict.leadership, len(verdict.flags), -(job.salary_max or job.salary_min or 0))
 
 
 def render(matches, today: str, total: int, rejected: int) -> str:
@@ -51,12 +51,12 @@ def render(matches, today: str, total: int, rejected: int) -> str:
         f"# Salesforce jobs — {today}",
         "",
         f"{len(matches)} new matches ({total} fetched, {rejected} filtered out, "
-        "rest already seen).",
+        "rest already seen). ⭐ = manager role or direct reports.",
         "",
     ]
     for job, verdict in matches:
         lines += [
-            f"## [{job.title}]({job.url})",
+            f"## {'⭐ ' if verdict.leadership else ''}[{job.title}]({job.url})",
             f"**{job.company}** · {job.location or 'location n/a'} · {job.work_mode}",
             "",
             f"- Salary: {fmt_salary(job)}",

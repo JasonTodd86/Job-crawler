@@ -40,25 +40,33 @@ def fetch(config: dict) -> list[Job]:
         print("adzuna: ADZUNA_APP_ID/ADZUNA_APP_KEY not set, skipping")
         return []
     s = config["searches"]
+    w = config["work_mode"]
+    # National search (for remote), plus a local one (for hybrid).
+    wheres = [{}]
+    if w["allow_hybrid"] and w.get("hybrid_search_location"):
+        km = round(w.get("hybrid_search_radius_miles", 40) * 1.609)
+        wheres.append({"where": w["hybrid_search_location"], "distance": km})
     jobs: list[Job] = []
     for query in s["queries"]:
-        for page in (1, 2):
-            resp = requests.get(
-                URL.format(country=s["country"], page=page),
-                params={
-                    "app_id": app_id,
-                    "app_key": app_key,
-                    "what": query,
-                    "max_days_old": s["max_days_old"],
-                    "results_per_page": 50,
-                    "full_time": 1,
-                    "content-type": "application/json",
-                },
-                timeout=60,
-            )
-            resp.raise_for_status()
-            results = resp.json().get("results", [])
-            jobs += [_to_job(item) for item in results]
-            if len(results) < 50:
-                break
+        for where in wheres:
+            for page in (1, 2):
+                resp = requests.get(
+                    URL.format(country=s["country"], page=page),
+                    params={
+                        "app_id": app_id,
+                        "app_key": app_key,
+                        "what": query,
+                        "max_days_old": s["max_days_old"],
+                        "results_per_page": 50,
+                        "full_time": 1,
+                        "content-type": "application/json",
+                        **where,
+                    },
+                    timeout=60,
+                )
+                resp.raise_for_status()
+                results = resp.json().get("results", [])
+                jobs += [_to_job(item) for item in results]
+                if len(results) < 50:
+                    break
     return jobs

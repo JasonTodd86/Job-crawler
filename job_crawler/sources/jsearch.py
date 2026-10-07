@@ -49,7 +49,7 @@ def _search(key: str, query: str, country: str, max_days_old: int, remote_only: 
     params = {
         "query": query,
         "page": 1,
-        "num_pages": 3,
+        "num_pages": 1,  # extra pages count against the monthly quota
         "country": country,
         "date_posted": next((v for d, v in DATE_POSTED.items() if max_days_old <= d), "month"),
         "employment_types": "FULLTIME",
@@ -74,9 +74,8 @@ def fetch(config: dict) -> list[Job]:
     for query in s["queries"]:
         if w["allow_remote"]:
             jobs += _search(key, query, s["country"], s["max_days_old"], remote_only=True)
-        if w["allow_hybrid"]:
-            places = w.get("hybrid_locations") or [""]
-            for place in places:
-                q = f"{query} hybrid" + (f" in {place}" if place else "")
-                jobs += _search(key, q, s["country"], s["max_days_old"], remote_only=False)
+        if w["allow_hybrid"] and w.get("hybrid_search_location"):
+            # Local results include on-site jobs; the filter keeps only hybrid ones.
+            q = f"{query} in {w['hybrid_search_location']}"
+            jobs += _search(key, q, s["country"], s["max_days_old"], remote_only=False)
     return jobs
