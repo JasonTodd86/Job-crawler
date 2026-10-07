@@ -1,0 +1,40 @@
+# Job search criteria. Edit this file to change what the crawler looks for.
+
+searches:
+  # Each query is sent to every enabled source.
+  queries:
+    - "salesforce developer"
+    - "salesforce engineer"
+    - "apex developer"
+  country: us
+  max_days_old: 7
+
+title:
+  # Every group must have at least one term present in the job title.
+  required_groups:
+    - ["salesforce", "apex", "sfdc", "lwc", "lightning"]
+    - ["developer", "engineer", "architect", "programmer", "technical lead", "tech lead"]
+  # Titles containing any of these are dropped.
+  exclude: ["intern", "internship", "junior", "jr.", "entry level", "apprentice"]
+
+work_mode:
+  allow_remote: true
+  allow_hybrid: true
+  # Hybrid jobs are kept only if their location contains one of these strings
+  # (e.g. "Dallas", "TX"). Leave empty to keep hybrid jobs anywhere.
+  hybrid_locations: []
+
+salary:
+  minimum_annual: 125000
+  # Many postings omit pay. true = keep them but flag "salary not listed".
+  include_unlisted: true
+
+employment:
+  # Reject anything that looks like contract, temp, C2C, 1099 or contract-to-hire.
+  exclude_contract: true
+
+benefits:
+  # true  = drop jobs whose posting never mentions benefits.
+  # false = keep them but flag "benefits not mentioned" (many full-time
+  #         postings omit benefits even though they offer them).
+  require_mention: false
