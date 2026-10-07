@@ -1,7 +1,9 @@
 # Job Crawler
 
-Daily search for full-time Salesforce developer jobs that match `config.yaml`:
-remote or hybrid, a salary floor+, no contract work, benefits offered.
+Weekday search for full-time Salesforce developer and development-manager jobs
+that match `config.yaml`: remote anywhere, or hybrid in the Example City / Example Suburb
+area; a salary floor+; no contract work; benefits offered. Manager roles and roles with
+direct reports are marked ⭐ and listed first.
 
 It does **not** scrape LinkedIn (that violates LinkedIn's terms and risks your
 account). It uses job-aggregator APIs instead. JSearch pulls from Google for
@@ -10,13 +12,17 @@ company career sites.
 
 ## Setup
 
-1. Get API keys (free tiers are enough for a daily run):
+1. Get API keys:
    - **JSearch**: subscribe to the free plan at
      https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch and copy your RapidAPI key.
    - **Adzuna** (optional): register at https://developer.adzuna.com/ for an app ID and key.
 2. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**
    and add `JSEARCH_API_KEY`, `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`.
-3. The workflow in `.github/workflows/daily.yml` runs every morning and commits
+   JSearch's free plan has a small monthly request limit. Each run uses
+   2 requests per query in `config.yaml` (one remote, one Example City), so the
+   default 3 queries × 22 weekdays ≈ 132 requests/month. Check the limit on
+   your plan page before adding queries.
+3. The workflow in `.github/workflows/daily.yml` runs every weekday morning and commits
    the results to `reports/latest.md`. Run it on demand from the **Actions** tab
    with **Run workflow**.
 

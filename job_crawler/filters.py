@@ -35,12 +35,24 @@ BENEFIT_PATTERN = re.compile(
 HYBRID_PATTERN = re.compile(r"\bhybrid\b", re.IGNORECASE)
 REMOTE_PATTERN = re.compile(r"\b(fully remote|100% remote|remote)\b", re.IGNORECASE)
 
+LEADERSHIP_TITLE = re.compile(r"\b(manager|director|head of|vp|vice president)\b", re.IGNORECASE)
+LEADERSHIP_TEXT = re.compile(
+    r"\b("
+    r"direct reports?|people manager|people leader|"
+    r"(manage|lead|mentor|build|grow) (and \w+ )?an? (small |growing )?(team|group) of|"
+    r"(manage|lead) (the |our )?(development|engineering|salesforce) team|"
+    r"performance reviews|hiring and developing"
+    r")\b",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class Verdict:
     keep: bool
     reason: str = ""
     flags: list[str] = field(default_factory=list)
+    leadership: bool = False
 
 
 def guess_work_mode(text: str) -> str:
@@ -49,6 +61,10 @@ def guess_work_mode(text: str) -> str:
     if REMOTE_PATTERN.search(text):
         return "remote"
     return "unknown"
+
+
+def is_leadership(job: Job) -> bool:
+    return bool(LEADERSHIP_TITLE.search(job.title) or LEADERSHIP_TEXT.search(job.description))
 
 
 def has_benefits(job: Job) -> bool:
@@ -111,4 +127,5 @@ def evaluate(job: Job, config: dict) -> Verdict:
             return Verdict(False, "benefits not mentioned")
         flags.append("benefits not mentioned")
 
-    return Verdict(True, flags=flags)
+    leadership = config.get("leadership", {}).get("prefer", False) and is_leadership(job)
+    return Verdict(True, flags=flags, leadership=leadership)

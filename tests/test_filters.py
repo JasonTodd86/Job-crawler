@@ -16,7 +16,7 @@ def job(**overrides) -> Job:
         source_id="1",
         title="Senior Salesforce Developer",
         company="Acme",
-        location="Dallas, TX",
+        location="Example Suburb, MO",
         url="https://example.com",
         description=f"Build Apex and LWC. {BENEFITS}",
         work_mode="remote",
@@ -79,6 +79,34 @@ class FilterTests(unittest.TestCase):
         cfg = {**CONFIG, "work_mode": {**CONFIG["work_mode"], "hybrid_locations": ["Austin"]}}
         j = job(work_mode="hybrid", location="Dallas, TX")
         self.assertFalse(evaluate(j, cfg).keep)
+
+    def test_hybrid_outside_st_louis_rejected_by_default(self):
+        j = job(work_mode="hybrid", location="Kansas City, MO")
+        self.assertFalse(evaluate(j, CONFIG).keep)
+
+    def test_manager_title_kept_and_marked_leadership(self):
+        for title in ("Salesforce Development Manager", "Director, Salesforce Engineering",
+                      "Head of Salesforce", "Salesforce Engineering Manager"):
+            with self.subTest(title=title):
+                v = evaluate(job(title=title), CONFIG)
+                self.assertTrue(v.keep)
+                self.assertTrue(v.leadership)
+
+    def test_direct_reports_in_description_marked_leadership(self):
+        j = job(title="Lead Salesforce Developer",
+                description=f"You will have 4 direct reports. {BENEFITS}")
+        self.assertTrue(evaluate(j, CONFIG).leadership)
+        j = job(description=f"Lead a team of 5 developers. {BENEFITS}")
+        self.assertTrue(evaluate(j, CONFIG).leadership)
+
+    def test_individual_contributor_not_leadership(self):
+        self.assertFalse(evaluate(job(), CONFIG).leadership)
+
+    def test_non_dev_manager_titles_rejected(self):
+        for title in ("Salesforce Account Manager", "Salesforce Project Manager",
+                      "Salesforce Account Executive"):
+            with self.subTest(title=title):
+                self.assertFalse(evaluate(job(title=title), CONFIG).keep)
 
     def test_onsite_rejected(self):
         j = job(work_mode="unknown", description=f"On-site in our office. {BENEFITS}")

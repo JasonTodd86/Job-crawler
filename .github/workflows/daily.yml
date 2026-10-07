@@ -1,8 +1,10 @@
-name: Daily job search
+name: Weekday job search
 
 on:
   schedule:
-    - cron: "17 12 * * *"  # ~7-8am US Central, daily
+    # ~7-8am US Central, weekdays (keeps JSearch under its free monthly quota;
+    # Monday's run still catches weekend postings).
+    - cron: "17 12 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
