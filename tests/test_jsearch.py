@@ -35,9 +35,10 @@ class JSearchTests(unittest.TestCase):
         return jobs, problems, get
 
     def test_prefers_employer_link_and_annualizes_pay(self):
-        jobs, problems, get = self.fetch(response({"data": [ITEM]}))
+        jobs, problems, get = self.fetch(response({"data": {"jobs": [ITEM]}}))
         self.assertEqual(problems, [])
-        self.assertEqual(get.call_count, 2)  # remote search + Example City search
+        self.assertEqual(get.call_count, 2)  # remote search + Example City search, one page each
+        self.assertTrue(get.call_args.args[0].endswith("/search-v2"))
         job = jobs[0]
         self.assertEqual(job.url, "https://acme.com/jobs/1")
         self.assertTrue(job.from_employer)
@@ -45,7 +46,7 @@ class JSearchTests(unittest.TestCase):
         self.assertEqual(job.salary_max, 60 * 2080)
 
     def test_remote_flag_and_query(self):
-        _, _, get = self.fetch(response({"data": []}))
+        _, _, get = self.fetch(response({"data": {"jobs": []}}))
         first, second = (c.kwargs["params"] for c in get.call_args_list)
         self.assertEqual(first["remote_jobs_only"], "true")
         self.assertEqual(second["query"], "salesforce in Example City, MO")
@@ -67,6 +68,21 @@ class JSearchTests(unittest.TestCase):
         resp.text = '{"message":"API doesn\'t exists"}'
         _, problems, _ = self.fetch(resp)
         self.assertEqual(problems, ['Google for Jobs: HTTP 404: {"message":"API doesn\'t exists"}'])
+
+    def test_follows_cursor_up_to_page_limit(self):
+        pages = [response({"data": {"jobs": [{**ITEM, "job_id": str(i)}], "cursor": f"c{i}"}})
+                 for i in range(5)]
+        cfg = {**CRITERIA, "where": {**CRITERIA["where"], "hybrid": False}}
+        with mock.patch.dict("os.environ", {"JSEARCH_API_KEY": "k"}, clear=True), \
+             mock.patch("requests.get", side_effect=pages) as get:
+            jobs = jsearch.fetch(cfg, [])
+        self.assertEqual(len(jobs), 2)  # criteria.yaml sets pages: 2
+        self.assertNotIn("cursor", get.call_args_list[0].kwargs["params"])
+        self.assertEqual(get.call_args_list[1].kwargs["params"]["cursor"], "c0")
+
+    def test_old_list_shape_still_read(self):
+        jobs, _, _ = self.fetch(response({"data": [ITEM]}))
+        self.assertEqual(len(jobs), 2)
 
 
 if __name__ == "__main__":
