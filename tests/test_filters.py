@@ -25,9 +25,14 @@ class TitleTests(unittest.TestCase):
         self.assertTrue(v.keep)
         self.assertEqual(v.notes, [])
 
-    def test_wrong_titles_skipped(self):
-        for title in ("Salesforce Administrator", "Java Developer", "Junior Salesforce Developer",
-                      "Salesforce Account Executive"):
+    def test_any_salesforce_title_kept(self):
+        for title in ("Salesforce Administrator", "Salesforce Business Analyst",
+                      "Sr. Salesforce Consultant", "Salesforce Development Manager",
+                      "MuleSoft Integration Engineer", "SFDC Platform Owner"):
+            self.assertTrue(evaluate(job(title=title), CRITERIA).keep, title)
+
+    def test_non_salesforce_and_junior_titles_skipped(self):
+        for title in ("Java Developer", "Junior Salesforce Developer", "Salesforce Intern"):
             self.assertFalse(evaluate(job(title=title), CRITERIA).keep, title)
 
 
@@ -105,24 +110,18 @@ class FakePostingTests(unittest.TestCase):
     def test_agency_names_need_whole_words(self):
         self.assertTrue(evaluate(job(company="Dicerna Pharmaceuticals"), CRITERIA).keep)
 
-    def test_employer_site_trusted(self):
-        self.assertTrue(evaluate(job(company="Acme Staffing", from_employer=True), CRITERIA).keep)
+    def test_linkedin_only_noted(self):
+        v = evaluate(job(publisher="LinkedIn"), CRITERIA)
+        self.assertTrue(v.keep)
+        self.assertIn("only found on LinkedIn, not the employer's own site", v.notes)
+
+    def test_employer_link_from_google_has_no_note(self):
+        self.assertEqual(evaluate(job(publisher="LinkedIn", from_employer=True), CRITERIA).notes, [])
 
     def test_recruiters_kept_with_note_when_allowed(self):
         v = evaluate(job(company="Robert Half"), {**CRITERIA, "skip_recruiters": False})
         self.assertTrue(v.keep)
         self.assertIn("posted by a recruiter, not the employer", v.notes)
-
-
-class LeadershipTests(unittest.TestCase):
-    def test_manager_title(self):
-        self.assertTrue(evaluate(job(title="Salesforce Development Manager"), CRITERIA).leadership)
-
-    def test_direct_reports_text(self):
-        self.assertTrue(evaluate(job(description="You will have 4 direct reports."), CRITERIA).leadership)
-
-    def test_individual_contributor(self):
-        self.assertFalse(evaluate(job(), CRITERIA).leadership)
 
 
 if __name__ == "__main__":

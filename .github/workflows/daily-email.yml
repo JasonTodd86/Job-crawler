@@ -24,6 +24,7 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          JSEARCH_API_KEY: ${{ secrets.JSEARCH_API_KEY }}
       - name: Remember which jobs were emailed
         run: |
           git config user.name "jobmail-bot"
