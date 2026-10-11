@@ -1,22 +1,19 @@
 # What jobs to look for. Edit this file to change your search; the next
 # morning's email uses the new settings.
 
-# Search words sent to job boards that have a search box.
+# Search words sent to sites that have a search box (Google for Jobs, Workday).
 keywords:
-  - "salesforce developer"
-  - "salesforce engineer"
-  - "salesforce development manager"
+  - "salesforce"
 
 title:
   # The job title must contain at least one word from EVERY group below.
+  # One group = any Salesforce job: developer, admin, consultant, analyst,
+  # architect, manager, specialty clouds, and so on.
   must_include_one_of_each:
-    - ["salesforce", "apex", "sfdc", "lwc", "lightning"]
-    - ["developer", "engineer", "architect", "programmer", "lead",
-       "manager", "director", "head of", "vp"]
-  # Titles containing any of these are skipped.
-  skip_if_contains: ["intern", "internship", "junior", "jr.", "entry level", "apprentice",
-                     "account executive", "account manager", "sales rep", "customer success",
-                     "project manager", "program manager", "marketing manager"]
+    - ["salesforce", "sfdc", "apex", "lwc", "mulesoft", "pardot"]
+  # Titles containing any of these are skipped. Add words here to cut out
+  # job types you don't want, e.g. "account executive" for sales jobs.
+  skip_if_contains: ["intern", "internship", "junior", "jr.", "entry level", "apprentice"]
 
 where:
   remote: true
@@ -32,9 +29,6 @@ pay:
   include_if_not_listed: true
 
 no_contract_work: true
-
-# Manager roles and jobs that mention direct reports are listed first, marked ⭐.
-prefer_leadership: true
 
 # Drop staffing-agency and "on behalf of our client" postings, the most common
 # source of fake, duplicate or secretly-contract listings.
@@ -62,7 +56,6 @@ employers:
   - {name: "Samsara", url: "https://boards.greenhouse.io/samsara"}
   - {name: "Gusto", url: "https://boards.greenhouse.io/gusto"}
   - {name: "Toast", url: "https://boards.greenhouse.io/toast"}
-  - {name: "Plaid", url: "https://jobs.lever.co/plaid"}
   - {name: "Ramp", url: "https://jobs.ashbyhq.com/ramp"}
   - {name: "Notion", url: "https://jobs.ashbyhq.com/notion"}
   # Example City-area employers (for hybrid roles) mostly use Workday, e.g.
@@ -73,3 +66,15 @@ job_boards:
   remotive: true
   remoteok: true
   jobicy: true
+
+# Google for Jobs, through JSearch's free plan (needs the JSEARCH_API_KEY secret;
+# see README). Covers Indeed, Glassdoor, ZipRecruiter, LinkedIn and company sites.
+jsearch:
+  enabled: true
+  # Each page is 10 jobs and costs 1 request from the free plan's monthly
+  # allowance. Every run does a remote search and a Example City search, so
+  # 2 pages = 4 requests a day, about 120 a month. Check your plan's limit
+  # before raising this.
+  pages: 2
+  # Only jobs posted within this many days: 1, 3, 7 or 30.
+  posted_within_days: 7

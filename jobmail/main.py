@@ -15,12 +15,12 @@ import yaml
 from . import digest, mailer
 from .filters import evaluate
 from .models import Job
-from .sources import boards, employers
+from .sources import boards, employers, jsearch
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEN_FILE = ROOT / "data" / "seen.json"
 # Employers' sites go first so their copy of a job wins over a job board's.
-SOURCES = [employers, boards]
+SOURCES = [employers, jsearch, boards]
 # The same title from one company in this many cities is usually a recruiter
 # collecting résumés or an "evergreen" ad with no real opening behind it.
 MASS_POSTING_CITIES = 5
@@ -39,8 +39,8 @@ def save_seen(seen: dict) -> None:
 
 def sort_key(match):
     job, verdict = match
-    # Leadership first, then employer-posted, then fewest caveats, then highest pay.
-    return (not verdict.leadership, not job.from_employer, len(verdict.notes),
+    # Employer-posted first, then fewest caveats, then highest pay.
+    return (not job.from_employer, len(verdict.notes),
             -(job.salary_max or job.salary_min or 0))
 
 

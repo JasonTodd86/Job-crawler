@@ -37,6 +37,8 @@ class Job:
     posted_at: str = ""
     # True when the employer posted this on its own careers site: the job is real.
     from_employer: bool = False
+    # For Google for Jobs results: the site it was found on, e.g. "LinkedIn", "Indeed".
+    publisher: str = ""
 
     @property
     def id(self) -> str:

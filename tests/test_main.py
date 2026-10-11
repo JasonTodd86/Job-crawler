@@ -31,11 +31,6 @@ class MatchTests(unittest.TestCase):
         matches = main.find_matches(jobs, CRITERIA, {}, False)
         self.assertEqual([j.source for j, _ in matches], ["Acme careers site", "Remotive"])
 
-    def test_leadership_sorts_first(self):
-        jobs = [job(), job(title="Salesforce Development Manager", company="Beta")]
-        matches = main.find_matches(jobs, CRITERIA, {}, False)
-        self.assertEqual(matches[0][0].company, "Beta")
-
     def test_mass_posting_flagged(self):
         jobs = [job(location=f"Remote - US {i}", source_id=str(i)) for i in range(6)]
         (_, verdict), = main.find_matches(jobs, CRITERIA, {}, False)
@@ -91,6 +86,12 @@ class MailerTests(unittest.TestCase):
         conn = smtp.return_value.__enter__.return_value
         conn.login.assert_called_once_with("me@gmail.com", "abcdefghijklmnop")
         self.assertEqual(conn.send_message.call_args.args[0]["To"], "me@gmail.com")
+
+    def test_missing_secrets_explained(self):
+        with mock.patch.dict("os.environ", {"GMAIL_ADDRESS": "me@gmail.com"}, clear=True):
+            with self.assertRaises(SystemExit) as caught:
+                mailer.send("Subject", "text", "<p>html</p>")
+        self.assertIn("GMAIL_APP_PASSWORD", str(caught.exception))
 
 
 if __name__ == "__main__":

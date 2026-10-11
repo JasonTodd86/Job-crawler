@@ -24,17 +24,6 @@ CONTRACT_TEXT = re.compile(
 HYBRID_TEXT = re.compile(r"\bhybrid\b", re.IGNORECASE)
 REMOTE_TEXT = re.compile(r"\b(fully remote|100% remote|remote)\b", re.IGNORECASE)
 
-LEADERSHIP_TITLE = re.compile(r"\b(manager|director|head of|vp|vice president)\b", re.IGNORECASE)
-LEADERSHIP_TEXT = re.compile(
-    r"\b("
-    r"direct reports?|people manager|people leader|"
-    r"(manage|lead|mentor|build|grow) (and \w+ )?an? (small |growing )?(team|group) of|"
-    r"(manage|lead) (the |our )?(development|engineering|salesforce) team|"
-    r"performance reviews|hiring and developing"
-    r")\b",
-    re.IGNORECASE,
-)
-
 # Staffing firms that post the same opening on every board, often for jobs
 # that are contract or don't exist yet. Matched as whole words in the company name.
 STAFFING_AGENCIES = (
@@ -79,7 +68,6 @@ class Verdict:
     keep: bool
     reason: str = ""
     notes: list[str] = field(default_factory=list)
-    leadership: bool = False
 
 
 def _amount(text: str) -> float:
@@ -122,14 +110,19 @@ def evaluate(job: Job, criteria: dict) -> Verdict:
         if term in title:
             return Verdict(False, f"title contains '{term}'")
 
-    # Fake, ghost and recruiter postings. Employers' own careers sites are trusted.
-    if not job.from_employer:
-        if NO_COMPANY.match(job.company.strip()):
-            return Verdict(False, "no company name")
-        if is_recruiter(job):
-            if criteria.get("skip_recruiters", True):
-                return Verdict(False, "staffing agency or recruiter")
-            notes.append("posted by a recruiter, not the employer")
+    # Fake, ghost and recruiter postings
+    if NO_COMPANY.match(job.company.strip()):
+        return Verdict(False, "no company name")
+    if is_recruiter(job):
+        if criteria.get("skip_recruiters", True):
+            return Verdict(False, "staffing agency or recruiter")
+        notes.append("posted by a recruiter, not the employer")
+    # Google for Jobs finds postings anywhere; say so when the employer's own site isn't among them.
+    if job.publisher and not job.from_employer:
+        if job.publisher.lower() == "linkedin":
+            notes.append("only found on LinkedIn, not the employer's own site")
+        else:
+            notes.append(f"found on {job.publisher}, not the employer's own site")
 
     # Employment type
     if criteria.get("no_contract_work", True):
@@ -175,7 +168,4 @@ def evaluate(job: Job, criteria: dict) -> Verdict:
     elif top < pay["minimum_per_year"]:
         return Verdict(False, f"pay tops out at ${top:,.0f}")
 
-    leadership = criteria.get("prefer_leadership", False) and bool(
-        LEADERSHIP_TITLE.search(job.title) or LEADERSHIP_TEXT.search(job.description)
-    )
-    return Verdict(True, notes=notes, leadership=leadership)
+    return Verdict(True, notes=notes)
