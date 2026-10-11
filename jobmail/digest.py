@@ -24,7 +24,7 @@ def subject(matches: list[Match], day: str) -> str:
 
 
 def _badges(job: Job, verdict: Verdict) -> str:
-    return ("⭐ " if verdict.leadership else "") + ("✅ " if job.from_employer else "")
+    return "✅ " if job.from_employer else ""
 
 
 def plain_text(matches: list[Match], day: str, problems: list[str]) -> str:
@@ -39,7 +39,7 @@ def plain_text(matches: list[Match], day: str, problems: list[str]) -> str:
         if verdict.notes:
             lines.append(f"  Note: {'; '.join(verdict.notes)}")
         lines.append("")
-    lines += ["⭐ = manager role or direct reports. ✅ = posted on the employer's own careers site.", ""]
+    lines += ["✅ = posted on the employer's own careers site.", ""]
     if problems:
         lines += ["Problems this run:"] + [f"  - {p}" for p in problems]
     return "\n".join(lines)
@@ -71,8 +71,7 @@ def html(matches: list[Match], day: str, problems: list[str]) -> str:
   max-width:640px;margin:0 auto;padding:16px">
 <h2 style="font-size:20px">{escape(subject(matches, day))}</h2>
 {''.join(cards)}
-<p style="color:#666;font-size:13px">⭐ = manager role or direct reports.
-  ✅ = posted on the employer's own careers site, so it's a real opening.<br>
+<p style="color:#666;font-size:13px">✅ = posted on the employer's own careers site, so it's a real opening.<br>
   For other jobs, check the company's own careers page before applying.</p>
 {trouble}
 <p style="color:#999;font-size:12px">Change what you get by editing criteria.yaml in the Job-crawler repo.</p>

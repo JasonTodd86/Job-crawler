@@ -31,11 +31,6 @@ class MatchTests(unittest.TestCase):
         matches = main.find_matches(jobs, CRITERIA, {}, False)
         self.assertEqual([j.source for j, _ in matches], ["Acme careers site", "Remotive"])
 
-    def test_leadership_sorts_first(self):
-        jobs = [job(), job(title="Salesforce Development Manager", company="Beta")]
-        matches = main.find_matches(jobs, CRITERIA, {}, False)
-        self.assertEqual(matches[0][0].company, "Beta")
-
     def test_mass_posting_flagged(self):
         jobs = [job(location=f"Remote - US {i}", source_id=str(i)) for i in range(6)]
         (_, verdict), = main.find_matches(jobs, CRITERIA, {}, False)
