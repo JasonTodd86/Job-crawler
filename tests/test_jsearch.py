@@ -19,7 +19,7 @@ ITEM = {
 
 
 def response(payload, status=200):
-    resp = mock.Mock(status_code=status)
+    resp = mock.Mock(status_code=status, text="")
     resp.json.return_value = payload
     if status >= 400:
         resp.raise_for_status.side_effect = requests.HTTPError(response=resp)
@@ -61,6 +61,12 @@ class JSearchTests(unittest.TestCase):
         jobs, problems, get = self.fetch(response({}, status=429))
         self.assertEqual(problems, ["Google for Jobs: HTTP 429 (monthly free allowance used up)"])
         self.assertEqual(get.call_count, 1)
+
+    def test_error_body_included(self):
+        resp = response({}, status=404)
+        resp.text = '{"message":"API doesn\'t exists"}'
+        _, problems, _ = self.fetch(resp)
+        self.assertEqual(problems, ['Google for Jobs: HTTP 404: {"message":"API doesn\'t exists"}'])
 
 
 if __name__ == "__main__":
