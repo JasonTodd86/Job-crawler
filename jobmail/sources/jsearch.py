@@ -12,7 +12,8 @@ import requests
 
 from ..models import Job
 
-URL = "https://jsearch.p.rapidapi.com/search"
+# JSearch retired /search in October 2026 ("Endpoint '/search' does not exist").
+URL = "https://jsearch.p.rapidapi.com/search-v2"
 HOST = "jsearch.p.rapidapi.com"
 TIMEOUT = 60
 PERIOD_TO_ANNUAL = {"YEAR": 1, "MONTH": 12, "WEEK": 52, "DAY": 260, "HOUR": 2080}
@@ -48,22 +49,38 @@ def _to_job(item: dict) -> Job:
     )
 
 
+def _items(data) -> tuple[list[dict], str | None]:
+    """/search-v2 returns {"data": {"jobs": [...], "cursor": "..."}}; /search returned {"data": [...]}."""
+    if isinstance(data, list):
+        return data, None
+    data = data or {}
+    return data.get("jobs") or [], data.get("cursor")
+
+
 def _search(key: str, query: str, cfg: dict, remote_only: bool) -> list[Job]:
     days = cfg.get("posted_within_days", 7)
     params = {
         "query": query,
-        "page": 1,
-        "num_pages": cfg.get("pages", 2),
         "country": "us",
         "date_posted": next((v for d, v in DATE_POSTED.items() if days <= d), "month"),
         "employment_types": "FULLTIME",
     }
     if remote_only:
         params["remote_jobs_only"] = "true"
-    resp = requests.get(URL, params=params, timeout=TIMEOUT,
-                        headers={"X-RapidAPI-Key": key, "X-RapidAPI-Host": HOST})
-    resp.raise_for_status()
-    return [_to_job(item) for item in resp.json().get("data") or []]
+    jobs: list[Job] = []
+    cursor = None
+    # Each page is one request from the free plan; the cursor says where the next page starts.
+    for _ in range(cfg.get("pages", 2)):
+        page = {**params, "cursor": cursor} if cursor else params
+        resp = requests.get(URL, params=page, timeout=TIMEOUT,
+                            headers={"X-RapidAPI-Key": key, "X-RapidAPI-Host": HOST})
+        resp.raise_for_status()
+        items, next_cursor = _items(resp.json().get("data"))
+        jobs += [_to_job(item) for item in items]
+        if not items or not next_cursor or next_cursor == cursor:
+            break
+        cursor = next_cursor
+    return jobs
 
 
 def fetch(criteria: dict, problems: list[str]) -> list[Job]:
