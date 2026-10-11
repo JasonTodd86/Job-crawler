@@ -62,7 +62,6 @@ employers:
   - {name: "Samsara", url: "https://boards.greenhouse.io/samsara"}
   - {name: "Gusto", url: "https://boards.greenhouse.io/gusto"}
   - {name: "Toast", url: "https://boards.greenhouse.io/toast"}
-  - {name: "Plaid", url: "https://jobs.lever.co/plaid"}
   - {name: "Ramp", url: "https://jobs.ashbyhq.com/ramp"}
   - {name: "Notion", url: "https://jobs.ashbyhq.com/notion"}
   # Example City-area employers (for hybrid roles) mostly use Workday, e.g.
