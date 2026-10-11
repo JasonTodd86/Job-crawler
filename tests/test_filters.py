@@ -3,114 +3,126 @@ from pathlib import Path
 
 import yaml
 
-from job_crawler.filters import evaluate
-from job_crawler.models import Job
+from jobmail.filters import evaluate, salary_from_text
+from jobmail.models import Job
 
-CONFIG = yaml.safe_load((Path(__file__).resolve().parent.parent / "config.yaml").read_text())
-BENEFITS = "We offer medical, dental, vision and a 401(k) match."
+CRITERIA = yaml.safe_load((Path(__file__).resolve().parent.parent / "criteria.yaml").read_text())
 
 
 def job(**overrides) -> Job:
     base = dict(
-        source="test",
-        source_id="1",
-        title="Senior Salesforce Developer",
-        company="Acme",
-        location="Example Suburb, MO",
-        url="https://example.com",
-        description=f"Build Apex and LWC. {BENEFITS}",
-        work_mode="remote",
-        employment_type="FULLTIME",
-        salary_min=110000,
-        salary_max=130000,
+        source="Remotive", source_id="1", title="Senior Salesforce Developer", company="Acme",
+        location="USA", url="https://example.com", description="Build Apex and LWC.",
+        work_mode="remote", employment_type="full_time", salary_min=110000, salary_max=130000,
     )
     base.update(overrides)
     return Job(**base)
 
 
-class FilterTests(unittest.TestCase):
+class TitleTests(unittest.TestCase):
     def test_ideal_job_passes_clean(self):
-        v = evaluate(job(), CONFIG)
+        v = evaluate(job(), CRITERIA)
         self.assertTrue(v.keep)
-        self.assertEqual(v.flags, [])
+        self.assertEqual(v.notes, [])
 
-    def test_non_dev_title_rejected(self):
-        self.assertFalse(evaluate(job(title="Salesforce Administrator"), CONFIG).keep)
-        self.assertFalse(evaluate(job(title="Java Developer"), CONFIG).keep)
-
-    def test_junior_rejected(self):
-        self.assertFalse(evaluate(job(title="Junior Salesforce Developer"), CONFIG).keep)
-
-    def test_contract_employment_type_rejected(self):
-        self.assertFalse(evaluate(job(employment_type="CONTRACTOR"), CONFIG).keep)
-        self.assertFalse(evaluate(job(employment_type="contract full_time"), CONFIG).keep)
-
-    def test_contract_wording_rejected(self):
-        for text in ("C2C only", "6 month contract", "Contract-to-hire role", "1099 OK",
-                     "Duration: 12 months"):
-            with self.subTest(text=text):
-                self.assertFalse(evaluate(job(description=f"{text}. {BENEFITS}"), CONFIG).keep)
-
-    def test_salary_below_minimum_rejected(self):
-        self.assertFalse(evaluate(job(salary_min=80000, salary_max=95000), CONFIG).keep)
-
-    def test_range_topping_above_minimum_kept(self):
-        self.assertTrue(evaluate(job(salary_min=95000, salary_max=115000), CONFIG).keep)
-
-    def test_unlisted_salary_flagged(self):
-        v = evaluate(job(salary_min=None, salary_max=None), CONFIG)
-        self.assertTrue(v.keep)
-        self.assertIn("salary not listed", v.flags)
-
-    def test_missing_benefits_flagged_or_rejected(self):
-        j = job(description="Build Apex and LWC.")
-        v = evaluate(j, CONFIG)
-        self.assertTrue(v.keep)
-        self.assertIn("benefits not mentioned", v.flags)
-        strict = {**CONFIG, "benefits": {"require_mention": True}}
-        self.assertFalse(evaluate(job(description="Build Apex."), strict).keep)
-
-    def test_hybrid_detected_from_text(self):
-        j = job(work_mode="unknown", description=f"Hybrid, 2 days in office. {BENEFITS}")
-        self.assertTrue(evaluate(j, CONFIG).keep)
-        self.assertEqual(j.work_mode, "hybrid")
-
-    def test_hybrid_location_restriction(self):
-        cfg = {**CONFIG, "work_mode": {**CONFIG["work_mode"], "hybrid_locations": ["Austin"]}}
-        j = job(work_mode="hybrid", location="Dallas, TX")
-        self.assertFalse(evaluate(j, cfg).keep)
-
-    def test_hybrid_outside_st_louis_rejected_by_default(self):
-        j = job(work_mode="hybrid", location="Kansas City, MO")
-        self.assertFalse(evaluate(j, CONFIG).keep)
-
-    def test_manager_title_kept_and_marked_leadership(self):
-        for title in ("Salesforce Development Manager", "Director, Salesforce Engineering",
-                      "Head of Salesforce", "Salesforce Engineering Manager"):
-            with self.subTest(title=title):
-                v = evaluate(job(title=title), CONFIG)
-                self.assertTrue(v.keep)
-                self.assertTrue(v.leadership)
-
-    def test_direct_reports_in_description_marked_leadership(self):
-        j = job(title="Lead Salesforce Developer",
-                description=f"You will have 4 direct reports. {BENEFITS}")
-        self.assertTrue(evaluate(j, CONFIG).leadership)
-        j = job(description=f"Lead a team of 5 developers. {BENEFITS}")
-        self.assertTrue(evaluate(j, CONFIG).leadership)
-
-    def test_individual_contributor_not_leadership(self):
-        self.assertFalse(evaluate(job(), CONFIG).leadership)
-
-    def test_non_dev_manager_titles_rejected(self):
-        for title in ("Salesforce Account Manager", "Salesforce Project Manager",
+    def test_wrong_titles_skipped(self):
+        for title in ("Salesforce Administrator", "Java Developer", "Junior Salesforce Developer",
                       "Salesforce Account Executive"):
-            with self.subTest(title=title):
-                self.assertFalse(evaluate(job(title=title), CONFIG).keep)
+            self.assertFalse(evaluate(job(title=title), CRITERIA).keep, title)
 
-    def test_onsite_rejected(self):
-        j = job(work_mode="unknown", description=f"On-site in our office. {BENEFITS}")
-        self.assertFalse(evaluate(j, CONFIG).keep)
+
+class ContractTests(unittest.TestCase):
+    def test_contract_type_skipped(self):
+        self.assertFalse(evaluate(job(employment_type="contract"), CRITERIA).keep)
+        self.assertFalse(evaluate(job(employment_type="part_time"), CRITERIA).keep)
+
+    def test_contract_wording_skipped(self):
+        self.assertFalse(evaluate(job(description="This is a 6 month contract."), CRITERIA).keep)
+        self.assertFalse(evaluate(job(description="W2 or C2C accepted"), CRITERIA).keep)
+
+
+class WhereTests(unittest.TestCase):
+    def test_hybrid_near_st_louis_kept(self):
+        v = evaluate(job(work_mode="hybrid", location="Example Suburb, MO"), CRITERIA)
+        self.assertTrue(v.keep)
+
+    def test_hybrid_elsewhere_skipped(self):
+        self.assertFalse(evaluate(job(work_mode="hybrid", location="Chicago, IL"), CRITERIA).keep)
+
+    def test_onsite_skipped(self):
+        self.assertFalse(evaluate(job(work_mode="unknown", location="Dallas, TX",
+                                      description="In office five days."), CRITERIA).keep)
+
+    def test_work_mode_guessed_from_text(self):
+        v = evaluate(job(work_mode="unknown", location="Example City, MO",
+                         description="This is a hybrid role, 2 days in office."), CRITERIA)
+        self.assertTrue(v.keep)
+
+    def test_remote_outside_us_skipped(self):
+        self.assertFalse(evaluate(job(location="UK only"), CRITERIA).keep)
+        self.assertFalse(evaluate(job(location="Europe"), CRITERIA).keep)
+
+    def test_remote_us_or_canada_kept(self):
+        self.assertTrue(evaluate(job(location="USA, Canada"), CRITERIA).keep)
+
+
+class PayTests(unittest.TestCase):
+    def test_low_pay_skipped(self):
+        self.assertFalse(evaluate(job(salary_min=80000, salary_max=100000), CRITERIA).keep)
+
+    def test_unlisted_pay_kept_with_note(self):
+        v = evaluate(job(salary_min=None, salary_max=None), CRITERIA)
+        self.assertTrue(v.keep)
+        self.assertIn("pay not listed", v.notes)
+
+    def test_pay_read_from_description(self):
+        low = job(salary_min=None, salary_max=None, description="Pay: $95,000 - $100,000.")
+        self.assertFalse(evaluate(low, CRITERIA).keep)
+        good = job(salary_min=None, salary_max=None, description="$120K to $150K")
+        self.assertTrue(evaluate(good, CRITERIA).keep)
+        self.assertEqual(good.salary_max, 150000)
+
+    def test_salary_text_formats(self):
+        self.assertEqual(salary_from_text("$118,400.00 - $177,600.00"), (118400, 177600))
+        self.assertEqual(salary_from_text("$120k–150k"), (120000, 150000))
+        self.assertIsNone(salary_from_text("$5,000 signing bonus"))
+        self.assertIsNone(salary_from_text("$45 - $60 per hour"))
+
+
+class FakePostingTests(unittest.TestCase):
+    def test_staffing_agency_skipped(self):
+        self.assertFalse(evaluate(job(company="Insight Global"), CRITERIA).keep)
+        self.assertFalse(evaluate(job(company="Acme Staffing"), CRITERIA).keep)
+
+    def test_our_client_wording_skipped(self):
+        j = job(description="On behalf of our client, we seek an Apex developer.")
+        self.assertFalse(evaluate(j, CRITERIA).keep)
+
+    def test_no_company_skipped(self):
+        self.assertFalse(evaluate(job(company="Confidential"), CRITERIA).keep)
+        self.assertFalse(evaluate(job(company=""), CRITERIA).keep)
+
+    def test_agency_names_need_whole_words(self):
+        self.assertTrue(evaluate(job(company="Dicerna Pharmaceuticals"), CRITERIA).keep)
+
+    def test_employer_site_trusted(self):
+        self.assertTrue(evaluate(job(company="Acme Staffing", from_employer=True), CRITERIA).keep)
+
+    def test_recruiters_kept_with_note_when_allowed(self):
+        v = evaluate(job(company="Robert Half"), {**CRITERIA, "skip_recruiters": False})
+        self.assertTrue(v.keep)
+        self.assertIn("posted by a recruiter, not the employer", v.notes)
+
+
+class LeadershipTests(unittest.TestCase):
+    def test_manager_title(self):
+        self.assertTrue(evaluate(job(title="Salesforce Development Manager"), CRITERIA).leadership)
+
+    def test_direct_reports_text(self):
+        self.assertTrue(evaluate(job(description="You will have 4 direct reports."), CRITERIA).leadership)
+
+    def test_individual_contributor(self):
+        self.assertFalse(evaluate(job(), CRITERIA).leadership)
 
 
 if __name__ == "__main__":

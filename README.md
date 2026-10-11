@@ -1,50 +1,81 @@
-# Job Crawler
+# Daily job email
 
-Weekday search for full-time Salesforce developer and development-manager jobs
-that match `config.yaml`: remote anywhere, or hybrid in the Example City / Example Suburb
-area; a salary floor+; no contract work; benefits offered. Manager roles and roles with
-direct reports are marked ⭐ and listed first.
+Every morning this searches for jobs that match `criteria.yaml` and emails
+you the new ones. Right now the criteria are: full-time Salesforce developer
+or development-manager roles, remote or hybrid around Example City / Example Suburb,
+paying a salary floor, with no contract work.
 
-It does **not** scrape LinkedIn (that violates LinkedIn's terms and risks your
-account). It uses job-aggregator APIs instead. JSearch pulls from Google for
-Jobs, which indexes most LinkedIn postings along with Indeed, Glassdoor and
-company career sites.
+Each job is emailed once. Tomorrow's email only has jobs you haven't seen.
 
-## Setup
+## Where the jobs come from
 
-1. Get API keys:
-   - **JSearch**: subscribe to the free plan at
-     https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch and copy your RapidAPI key.
-   - **Adzuna** (optional): register at https://developer.adzuna.com/ for an app ID and key.
-2. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**
-   and add `JSEARCH_API_KEY`, `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`.
-   JSearch's free plan has a small monthly request limit. Each run uses
-   2 requests per query in `config.yaml` (one remote, one Example City), so the
-   default 3 queries × 22 weekdays ≈ 132 requests/month. Check the limit on
-   your plan page before adding queries.
-3. The workflow in `.github/workflows/daily.yml` runs every weekday morning and commits
-   the results to `reports/latest.md`. Run it on demand from the **Actions** tab
-   with **Run workflow**.
+All sources are free and need no sign-up:
 
-## Reading the report
+- **Employers' own careers sites** (the `employers:` list in `criteria.yaml`).
+  The employer posted these, so they're real openings. Marked ✅.
+- **Remotive, Remote OK and Jobicy**, three remote-job boards where employers
+  pay to post. They're much less prone to fake listings than LinkedIn.
 
-Each run lists only jobs it hasn't shown you before (tracked in `data/seen.json`).
-Jobs whose details are fully confirmed come first. Jobs whose posting leaves
-something unstated are kept but marked ⚠️:
+LinkedIn isn't searched: scraping it breaks LinkedIn's terms and can get your
+account banned.
 
-- **salary not listed**: set `salary.include_unlisted: false` to drop these.
-- **benefits not mentioned**: set `benefits.require_mention: true` to drop these.
-  Many full-time postings leave benefits out, so dropping them hides real jobs.
+## Screening out fake postings
 
-Always rejected: contract, contract-to-hire, C2C, 1099, temp, part-time, on-site
-only, junior/intern, and any posted salary range topping out under the minimum.
+Skipped automatically:
 
-## Running locally
+- staffing agencies (Robert Half, TEKsystems, Insight Global, …) and
+  "on behalf of our client" posts
+- postings with no company name, or "Confidential"
+- contract, contract-to-hire, C2C, 1099, temp, part-time and junior roles
+- remote jobs limited to other countries
+- pay ranges that top out under your minimum
+
+Flagged ⚠️ but kept: the same ad in 5+ cities (a common sign of a recruiter or
+an "evergreen" ad), and postings that don't list pay. For any job without ✅,
+check that it's on the company's own careers page before applying.
+
+## One-time setup (about 10 minutes)
+
+**1. Make a Gmail app password.** This is a separate password just for this
+tool; your real password stays private.
+
+1. Turn on 2-Step Verification for your Google account if it isn't already:
+   https://myaccount.google.com/signinoptions/twosv
+2. Go to https://myaccount.google.com/apppasswords, type a name like
+   "Job email", and click **Create**.
+3. Copy the 16-letter password it shows.
+
+**2. Add it to GitHub.** In this repository on GitHub, go to
+**Settings → Secrets and variables → Actions → New repository secret**, and add:
+
+| Name                 | Value                                              |
+| -------------------- | -------------------------------------------------- |
+| `GMAIL_ADDRESS`      | your Gmail address                                 |
+| `GMAIL_APP_PASSWORD` | the 16-letter app password                         |
+| `EMAIL_TO`           | *(optional)* where to send it, if not that Gmail   |
+
+**3. Test it.** Go to the **Actions** tab → **Daily job email** → **Run workflow**.
+The email arrives within a few minutes. After that it runs every morning
+around 7am Central.
+
+## Changing what you get
+
+Edit `criteria.yaml` on GitHub (click the file, then the pencil icon). Each
+setting has a comment explaining it. The most useful ones:
+
+- `pay.minimum_per_year`: your salary floor
+- `where.hybrid_places`: towns that count as close enough for hybrid
+- `employers`: companies whose careers sites are checked daily. Add a
+  company by pasting the web address of its job list. Most large Example City
+  employers use Workday (`<company>.myworkdayjobs.com`), which works here.
+
+If a careers link stops working or a job board is down, the email says so
+at the bottom.
+
+## Running it yourself
 
 ```
 pip install -r requirements.txt
-export JSEARCH_API_KEY=...
-python -m job_crawler.main          # new matches only
-python -m job_crawler.main --all    # include already-seen matches
+python -m jobmail.main --preview        # writes preview.html, sends nothing
 python -m unittest discover -s tests
 ```
