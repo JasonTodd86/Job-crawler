@@ -90,7 +90,9 @@ def fetch(criteria: dict, problems: list[str]) -> list[Job]:
             code = exc.response.status_code if exc.response is not None else "?"
             hint = {401: " (check the key)", 403: " (check you're subscribed to the free plan)",
                     429: " (monthly free allowance used up)"}.get(code, "")
-            problems.append(f"Google for Jobs: HTTP {code}{hint}")
+            # RapidAPI explains most refusals in the body, e.g. {"message": "..."}.
+            detail = (exc.response.text or "").strip()[:200] if exc.response is not None else ""
+            problems.append(f"Google for Jobs: HTTP {code}{hint}" + (f": {detail}" if detail else ""))
             break
         except requests.RequestException as exc:
             problems.append(f"Google for Jobs: couldn't connect ({type(exc).__name__})")
