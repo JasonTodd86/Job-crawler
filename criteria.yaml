@@ -1,0 +1,80 @@
+# What jobs to look for. Edit this file to change your search; the next
+# morning's email uses the new settings.
+
+# Search words sent to job boards that have a search box.
+keywords:
+  - "salesforce developer"
+  - "salesforce engineer"
+  - "salesforce development manager"
+
+title:
+  # The job title must contain at least one word from EVERY group below.
+  must_include_one_of_each:
+    - ["salesforce", "apex", "sfdc", "lwc", "lightning"]
+    - ["developer", "engineer", "architect", "programmer", "lead",
+       "manager", "director", "head of", "vp"]
+  # Titles containing any of these are skipped.
+  skip_if_contains: ["intern", "internship", "junior", "jr.", "entry level", "apprentice",
+                     "account executive", "account manager", "sales rep", "customer success",
+                     "project manager", "program manager", "marketing manager"]
+
+where:
+  remote: true
+  hybrid: true
+  # Hybrid jobs count only if the job's location mentions one of these places.
+  hybrid_places: ["St. Louis", "Saint Louis", "St. Charles", "Saint Charles",
+                  "St. Peters", "O'Fallon", "Wentzville", "Chesterfield",
+                  "Clayton", "Creve Coeur", "Maryland Heights", "Earth City",
+                  "Town and Country", "Kirkwood", "Ballwin", "Fenton",
+                  "Brentwood", "Bridgeton", "Hazelwood", "Edwardsville",
+                  "Belleville"]
+  # Remote jobs limited to other countries (e.g. "Remote - UK only") are skipped.
+  country: "US"
+
+pay:
+  minimum_per_year: 105000
+  # Many postings don't list pay. true = include them, marked "pay not listed".
+  include_if_not_listed: true
+
+no_contract_work: true
+
+# Manager roles and jobs that mention direct reports are listed first, marked ⭐.
+prefer_leadership: true
+
+# Drop staffing-agency and "on behalf of our client" postings, the most common
+# source of fake, duplicate or secretly-contract listings.
+skip_recruiters: true
+
+email:
+  # Send an email even on days with nothing new, so you know it ran.
+  send_when_nothing_new: true
+
+# Companies whose own careers sites are checked every day. Jobs from these are
+# marked ✅ because the employer itself posted them.
+#
+# To add one: open the company's careers page, click through to its list of
+# jobs, and copy the address from your browser if it starts with one of:
+#   boards.greenhouse.io/...   job-boards.greenhouse.io/...   jobs.lever.co/...
+#   jobs.ashbyhq.com/...       <something>.myworkdayjobs.com/...
+# If a link stops working, the email says so at the bottom.
+employers:
+  # Software companies with in-house Salesforce teams that hire remote.
+  - {name: "GitLab", url: "https://boards.greenhouse.io/gitlab"}
+  - {name: "Datadog", url: "https://boards.greenhouse.io/datadog"}
+  - {name: "Cloudflare", url: "https://boards.greenhouse.io/cloudflare"}
+  - {name: "Twilio", url: "https://boards.greenhouse.io/twilio"}
+  - {name: "Okta", url: "https://boards.greenhouse.io/okta"}
+  - {name: "Samsara", url: "https://boards.greenhouse.io/samsara"}
+  - {name: "Gusto", url: "https://boards.greenhouse.io/gusto"}
+  - {name: "Toast", url: "https://boards.greenhouse.io/toast"}
+  - {name: "Plaid", url: "https://jobs.lever.co/plaid"}
+  - {name: "Ramp", url: "https://jobs.ashbyhq.com/ramp"}
+  - {name: "Notion", url: "https://jobs.ashbyhq.com/notion"}
+  # St. Louis-area employers (for hybrid roles) mostly use Workday, e.g.
+  # - {name: "Some Company", url: "https://somecompany.wd5.myworkdayjobs.com/External"}
+
+# Free remote-job boards that are searched every day. Set any to false to skip it.
+job_boards:
+  remotive: true
+  remoteok: true
+  jobicy: true
