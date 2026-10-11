@@ -1,22 +1,25 @@
 # Daily job email
 
 Every morning this searches for jobs that match `criteria.yaml` and emails
-you the new ones. Right now the criteria are: full-time Salesforce developer
-or development-manager roles, remote or hybrid around St. Louis / St. Charles,
-paying $105k or more, with no contract work.
+you the new ones. Right now the criteria are: any full-time Salesforce job
+(developer, admin, consultant, analyst, architect, manager and so on), remote
+or hybrid around St. Louis / St. Charles, paying $105k or more, with no
+contract work.
 
 Each job is emailed once. Tomorrow's email only has jobs you haven't seen.
 
 ## Where the jobs come from
 
-All sources are free and need no sign-up:
-
 - **Employers' own careers sites** (the `employers:` list in `criteria.yaml`).
   The employer posted these, so they're real openings. Marked ✅.
+- **Google for Jobs**, through JSearch's free plan. It covers Indeed,
+  Glassdoor, ZipRecruiter, LinkedIn and company sites. When a job has an apply
+  link on the employer's own site, the email links there and marks it ✅;
+  otherwise it notes where the job was found (e.g. "only found on LinkedIn").
 - **Remotive, Remote OK and Jobicy**, three remote-job boards where employers
   pay to post. They're much less prone to fake listings than LinkedIn.
 
-LinkedIn isn't searched: scraping it breaks LinkedIn's terms and can get your
+LinkedIn itself isn't scraped: that breaks LinkedIn's terms and can get your
 account banned.
 
 ## Screening out fake postings
@@ -54,7 +57,22 @@ tool; your real password stays private.
 | `GMAIL_APP_PASSWORD` | the 16-letter app password                         |
 | `EMAIL_TO`           | *(optional)* where to send it, if not that Gmail   |
 
-**3. Test it.** Go to the **Actions** tab → **Daily job email** → **Run workflow**.
+**3. Add Google for Jobs (JSearch).**
+
+1. Make a free account at https://rapidapi.com/auth/sign-up.
+2. Open https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch/pricing and
+   click **Subscribe** on the free **Basic** plan.
+3. Open the **Playground** (or **Endpoints**) tab. In the code example, copy
+   the long value shown next to `X-RapidAPI-Key`.
+4. Add it to GitHub as a secret named `JSEARCH_API_KEY`, the same way as the
+   Gmail ones.
+
+The free plan has a monthly request limit (shown on the pricing page). The
+default settings use about 120 requests a month; `jsearch.pages` in
+`criteria.yaml` controls that. If the limit runs out, the email says so and
+the other sources keep working.
+
+**4. Test it.** Go to the **Actions** tab → **Daily job email** → **Run workflow**.
 The email arrives within a few minutes. After that it runs every morning
 around 7am Central.
 
