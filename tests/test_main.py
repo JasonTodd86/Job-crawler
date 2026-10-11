@@ -92,6 +92,12 @@ class MailerTests(unittest.TestCase):
         conn.login.assert_called_once_with("me@gmail.com", "abcdefghijklmnop")
         self.assertEqual(conn.send_message.call_args.args[0]["To"], "me@gmail.com")
 
+    def test_missing_secrets_explained(self):
+        with mock.patch.dict("os.environ", {"GMAIL_ADDRESS": "me@gmail.com"}, clear=True):
+            with self.assertRaises(SystemExit) as caught:
+                mailer.send("Subject", "text", "<p>html</p>")
+        self.assertIn("GMAIL_APP_PASSWORD", str(caught.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
