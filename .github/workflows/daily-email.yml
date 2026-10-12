@@ -2,8 +2,10 @@ name: Daily job email
 
 on:
   schedule:
-    # 12:07 UTC = 7:07am Central in summer, 6:07am in winter. Every day.
-    - cron: "7 12 * * *"
+    # 9:23 UTC = 4:23am Central in summer, 3:23am in winter. Every day.
+    # GitHub often starts scheduled runs hours late at busy times, so this is
+    # early enough that the email still arrives by mid-morning.
+    - cron: "23 9 * * *"
   workflow_dispatch: {}
 
 permissions:
