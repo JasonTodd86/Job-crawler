@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest import mock
 
@@ -60,6 +62,10 @@ class RunTests(unittest.TestCase):
             mock.patch.object(main, "load_seen", return_value={}),
             mock.patch.object(main, "save_seen", side_effect=self.saved.update),
         ]
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.last_sent = Path(self.tmp.name) / "last_sent.txt"
+        patches.append(mock.patch.object(main, "LAST_SENT_FILE", self.last_sent))
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
@@ -70,11 +76,36 @@ class RunTests(unittest.TestCase):
         self.assertTrue(send.call_args.args[0].startswith("1 new Salesforce job"))
         self.assertIn("acme|salesforce developer", self.saved)
 
+    def test_records_send_date(self):
+        with mock.patch.object(mailer, "send"):
+            main.run(main.ROOT / "criteria.yaml", preview=False, include_seen=False)
+        self.assertEqual(self.last_sent.read_text().strip(), date.today().isoformat())
+
+    def test_second_scheduled_run_same_day_does_nothing(self):
+        self.last_sent.write_text(date.today().isoformat() + "\n")
+        with mock.patch.object(mailer, "send") as send:
+            main.run(main.ROOT / "criteria.yaml", preview=False, include_seen=False, once_per_day=True)
+        send.assert_not_called()
+        self.assertEqual(self.saved, {})
+
+    def test_scheduled_run_sends_when_last_email_was_yesterday(self):
+        self.last_sent.write_text("2000-01-01\n")
+        with mock.patch.object(mailer, "send") as send:
+            main.run(main.ROOT / "criteria.yaml", preview=False, include_seen=False, once_per_day=True)
+        send.assert_called_once()
+
+    def test_manual_run_always_sends(self):
+        self.last_sent.write_text(date.today().isoformat() + "\n")
+        with mock.patch.object(mailer, "send") as send:
+            main.run(main.ROOT / "criteria.yaml", preview=False, include_seen=False)
+        send.assert_called_once()
+
     def test_failed_send_does_not_mark_jobs_seen(self):
         with mock.patch.object(mailer, "send", side_effect=OSError("smtp down")):
             with self.assertRaises(OSError):
                 main.run(main.ROOT / "criteria.yaml", preview=False, include_seen=False)
         self.assertEqual(self.saved, {})
+        self.assertFalse(self.last_sent.exists())
 
 
 class MailerTests(unittest.TestCase):

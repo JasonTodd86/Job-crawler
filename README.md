@@ -73,9 +73,11 @@ default settings use about 120 requests a month; `jsearch.pages` in
 the other sources keep working.
 
 **4. Test it.** Go to the **Actions** tab → **Daily job email** → **Run workflow**.
-The email arrives within a few minutes. After that it runs every morning,
-scheduled for 4:23am Central. GitHub sometimes starts scheduled runs a few
-hours late, so the email usually arrives sometime before mid-morning.
+The email arrives within a few minutes. After that it runs every day on its
+own. GitHub sometimes starts scheduled jobs hours late or skips them, so the
+job is scheduled four times between about 4am and noon Central; the first one
+that runs sends the email and the rest do nothing. Expect it in the morning,
+occasionally around midday.
 
 ## Changing what you get
 
