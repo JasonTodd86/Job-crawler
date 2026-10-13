@@ -2,14 +2,23 @@ name: Daily job email
 
 on:
   schedule:
-    # 9:23 UTC = 4:23am Central in summer, 3:23am in winter. Every day.
-    # GitHub often starts scheduled runs hours late at busy times, so this is
-    # early enough that the email still arrives by mid-morning.
+    # GitHub starts scheduled runs late, and sometimes skips them, when it's
+    # busy. So the job is scheduled several times a day; the first one that
+    # runs sends the email and the rest see it went out and stop.
+    # Times are UTC: 4:23am, 6:41am, 8:17am and 11:53am Central (summer).
     - cron: "23 9 * * *"
+    - cron: "41 11 * * *"
+    - cron: "17 13 * * *"
+    - cron: "53 16 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
+
+# Never let two runs overlap, or both could send the same day's email.
+concurrency:
+  group: daily-email
+  cancel-in-progress: false
 
 jobs:
   email:
@@ -21,7 +30,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python -m unittest discover -s tests
-      - run: python -m jobmail.main
+      # Scheduled runs stop if today's email already went out; a manual run always sends.
+      - run: python -m jobmail.main ${{ github.event_name == 'schedule' && '--once-per-day' || '' }}
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -31,6 +41,7 @@ jobs:
         run: |
           git config user.name "jobmail-bot"
           git config user.email "jobmail-bot@users.noreply.github.com"
-          git add data/seen.json
+          git add data/
           git diff --cached --quiet || git commit -m "Jobs emailed $(date -u +%F)"
+          git pull --rebase --quiet
           git push
