@@ -1,12 +1,38 @@
-# Daily job email
+# Job-crawler
 
-Every morning this searches for jobs that match `criteria.yaml` and emails
-you the new ones. Right now the criteria are: any full-time Salesforce job
-(developer, admin, consultant, analyst, architect, manager and so on), remote
-or hybrid around Example City / Example Suburb, paying a salary floor, with no
-contract work.
+> **Retired.** I used this for my own job search and have turned the daily schedule off. The code is kept here as a finished project. `criteria.yaml` holds placeholder values (salary floor and towns), not my real settings.
 
-Each job is emailed once. Tomorrow's email only has jobs you haven't seen.
+A Python bot that runs on GitHub Actions and emails me a daily digest of new Salesforce job postings. It pulls from employer careers pages, Google for Jobs (via the JSearch API) and three remote job boards, filters them against `criteria.yaml`, and sends only the jobs I haven't seen before.
+
+## Why I built it
+
+Checking job boards by hand every day is slow, and a lot of what shows up is recruiter reposts, duplicate ads or contract roles. This does the checking and the screening for me and delivers the result by email.
+
+## What it does
+
+- Fetches jobs from three kinds of source (`jobmail/sources/`): employer careers sites (Greenhouse, Lever, Ashby and Workday), JSearch / Google for Jobs, and Remotive, Remote OK and Jobicy
+- Filters by title keywords, remote/hybrid and location, pay floor, contract vs. full-time, and staffing-agency postings (`jobmail/filters.py`)
+- Marks jobs posted directly by the employer, and flags suspicious ones (same ad in 5+ cities, no pay listed)
+- Emails an HTML + plain-text digest through Gmail SMTP (`jobmail/digest.py`, `jobmail/mailer.py`)
+- Remembers what it already sent in `data/seen.json`, which the workflow commits back to the repo
+- Was scheduled four times each morning (schedule now removed) because GitHub delays or skips scheduled runs; `--once-per-day` makes the extra runs do nothing once the email has gone out
+- Runs the unit test suite in `tests/` before every send
+
+## Stack
+
+Python 3.12, `requests`, `PyYAML`, `unittest`, GitHub Actions (cron schedule, repository secrets), Gmail SMTP
+
+## How to run it
+
+Locally:
+
+```
+pip install -r requirements.txt
+python -m jobmail.main --preview        # writes preview.html, sends nothing
+python -m unittest discover -s tests
+```
+
+On GitHub: fork the repo, add the secrets described in the setup section below, then run **Actions → Daily job email → Run workflow**. To run it daily again, add a `schedule:` cron trigger back to `.github/workflows/daily-email.yml`.
 
 ## Where the jobs come from
 
@@ -37,7 +63,7 @@ Flagged ⚠️ but kept: the same ad in 5+ cities (a common sign of a recruiter 
 an "evergreen" ad), and postings that don't list pay. For any job without ✅,
 check that it's on the company's own careers page before applying.
 
-## One-time setup (about 10 minutes)
+## Setup (about 10 minutes)
 
 **1. Make a Gmail app password.** This is a separate password just for this
 tool; your real password stays private.
@@ -87,16 +113,8 @@ setting has a comment explaining it. The most useful ones:
 - `pay.minimum_per_year`: your salary floor
 - `where.hybrid_places`: towns that count as close enough for hybrid
 - `employers`: companies whose careers sites are checked daily. Add a
-  company by pasting the web address of its job list. Most large Example City
+  company by pasting the web address of its job list. Many large local
   employers use Workday (`<company>.myworkdayjobs.com`), which works here.
 
 If a careers link stops working or a job board is down, the email says so
 at the bottom.
-
-## Running it yourself
-
-```
-pip install -r requirements.txt
-python -m jobmail.main --preview        # writes preview.html, sends nothing
-python -m unittest discover -s tests
-```

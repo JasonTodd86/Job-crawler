@@ -37,7 +37,7 @@ class JSearchTests(unittest.TestCase):
     def test_prefers_employer_link_and_annualizes_pay(self):
         jobs, problems, get = self.fetch(response({"data": {"jobs": [ITEM]}}))
         self.assertEqual(problems, [])
-        self.assertEqual(get.call_count, 2)  # remote search + Example City search, one page each
+        self.assertEqual(get.call_count, 2)  # remote search + local search, one page each
         self.assertTrue(get.call_args.args[0].endswith("/search-v2"))
         job = jobs[0]
         self.assertEqual(job.url, "https://acme.com/jobs/1")
@@ -49,7 +49,7 @@ class JSearchTests(unittest.TestCase):
         _, _, get = self.fetch(response({"data": {"jobs": []}}))
         first, second = (c.kwargs["params"] for c in get.call_args_list)
         self.assertEqual(first["remote_jobs_only"], "true")
-        self.assertEqual(second["query"], "salesforce in Example City, MO")
+        self.assertEqual(second["query"], "salesforce in Example City")
         self.assertEqual(first["date_posted"], "week")
 
     def test_missing_key_reported(self):

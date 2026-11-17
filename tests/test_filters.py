@@ -47,7 +47,7 @@ class ContractTests(unittest.TestCase):
 
 
 class WhereTests(unittest.TestCase):
-    def test_hybrid_near_st_louis_kept(self):
+    def test_hybrid_near_home_kept(self):
         v = evaluate(job(work_mode="hybrid", location="Example Suburb, MO"), CRITERIA)
         self.assertTrue(v.keep)
 

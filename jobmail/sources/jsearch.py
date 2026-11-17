@@ -98,7 +98,8 @@ def fetch(criteria: dict, problems: list[str]) -> list[Job]:
         searches.append((query, True))
     if where["hybrid"]:
         # Local results include on-site jobs; the filter keeps only the hybrid ones.
-        searches.append((f"{query} in Example City, MO", False))
+        place = (where.get("hybrid_places") or [""])[0]
+        searches.append((f"{query} in {place}".strip(), False))
     jobs: list[Job] = []
     for q, remote_only in searches:
         try:

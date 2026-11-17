@@ -1,15 +1,8 @@
 name: Daily job email
 
 on:
-  schedule:
-    # GitHub starts scheduled runs late, and sometimes skips them, when it's
-    # busy. So the job is scheduled several times a day; the first one that
-    # runs sends the email and the rest see it went out and stop.
-    # Times are UTC: 4:23am, 6:41am, 8:17am and 11:53am Central (summer).
-    - cron: "23 9 * * *"
-    - cron: "41 11 * * *"
-    - cron: "17 13 * * *"
-    - cron: "53 16 * * *"
+  # Retired: the daily schedule has been removed. This repo is kept as a finished project.
+  # Run it by hand from the Actions tab if you want to try it.
   workflow_dispatch: {}
 
 permissions:

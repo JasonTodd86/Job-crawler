@@ -58,7 +58,7 @@ employers:
   - {name: "Toast", url: "https://boards.greenhouse.io/toast"}
   - {name: "Ramp", url: "https://jobs.ashbyhq.com/ramp"}
   - {name: "Notion", url: "https://jobs.ashbyhq.com/notion"}
-  # Example City-area employers (for hybrid roles) mostly use Workday, e.g.
+  # Local employers (for hybrid roles) often use Workday, e.g.
   # - {name: "Some Company", url: "https://somecompany.wd5.myworkdayjobs.com/External"}
 
 # Free remote-job boards that are searched every day. Set any to false to skip it.
@@ -72,7 +72,7 @@ job_boards:
 jsearch:
   enabled: true
   # Each page is 10 jobs and costs 1 request from the free plan's monthly
-  # allowance. Every run does a remote search and a Example City search, so
+  # allowance. Every run does a remote search and a local search, so
   # 2 pages = 4 requests a day, about 120 a month. Check your plan's limit
   # before raising this.
   pages: 2
